@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Marketing Reels Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 14px;
+      letter-spacing: 6px;
+      color: #444;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 60px;
+      align-items: center;
+    }
+
+    .generate-btn {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 14px 40px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .generate-btn:hover { background: #ff0000; color: #fff; }
+    .generate-btn:disabled { background: #222; color: #444; cursor: not-allowed; }
+
+    .count-select {
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 14px 20px;
+      font-size: 13px;
+      letter-spacing: 2px;
+    }
+
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .loading.active { display: flex; }
+
+    .loading-bar {
+      width: 200px;
+      height: 2px;
+      background: #111;
+      overflow: hidden;
+    }
+
+    .loading-bar-inner {
+      height: 100%;
+      background: #fff;
+      animation: load 1.5s ease-in-out infinite;
+    }
+
+    @keyframes load {
+      0% { width: 0%; margin-left: 0; }
+      50% { width: 100%; margin-left: 0; }
+      100% { width: 0%; margin-left: 100%; }
+    }
+
+    .loading-text {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: #444;
+      text-transform: uppercase;
+    }
+
+    .reels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 24px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .reel-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 177.78%;
+      cursor: pointer;
+    }
+
+    .reel-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+    }
+
+    .reel-element {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      padding: 0 24px;
+      opacity: 0;
+      transform: translateY(-120px);
+    }
+
+    .el-term {
+      font-size: clamp(36px, 8vw, 52px);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      top: 15%;
+    }
+
+    .el-reframe {
+      font-size: clamp(13px, 2.5vw, 16px);
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      top: 32%;
+      color: #888;
+    }
+
+    .el-truth {
+      font-size: clamp(18px, 4vw, 24px);
+      font-weight: 900;
+      line-height: 1.2;
+      top: 44%;
+    }
+
+    .el-data {
+      font-size: clamp(64px, 15vw, 96px);
+      font-weight: 900;
+      line-height: 1;
+      top: 58%;
+    }
+
+    .el-verdict {
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 900;
+      letter-spacing: 8px;
+      bottom: 12%;
+      top: auto;
+      color: #fff;
+    }
+
+    @keyframes gravityDrop {
+      0% { opacity: 0; transform: translateY(-200px) scaleY(1.3); }
+      60% { opacity: 1; transform: translateY(8px) scaleY(0.95); }
+      75% { transform: translateY(-4px) scaleY(1.02); }
+      90% { transform: translateY(2px) scaleY(0.99); }
+      100% { opacity: 1; transform: translateY(0) scaleY(1); }
+    }
+
+    @keyframes groundShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+    }
+
+    .reel-canvas.playing .el-term {
+      animation: gravityDrop 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s forwards,
+                 groundShake 0.3s ease 0.7s;
+    }
+
+    .reel-canvas.playing .el-reframe {
+      animation: gravityDrop 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.9s forwards;
+    }
+
+    .reel-canvas.playing .el-truth {
+      animation: gravityDrop 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.7s forwards;
+    }
+
+    .reel-canvas.playing .el-data {
+      animation: gravityDrop 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2.5s forwards,
+                 groundShake 0.4s ease 3.2s;
+    }
+
+    .reel-canvas.playing .el-verdict {
+      animation: gravityDrop 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 3.5s forwards,
+                 groundShake 0.5s ease 4.3s;
+    }
+
+    .play-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      width: 56px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      transition: all 0.2s;
+      backdrop-filter: blur(4px);
+    }
+
+    .reel-canvas.playing .play-overlay { display: none; }
+
+    .reel-wrapper:hover .play-overlay {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .divider {
+      position: absolute;
+      width: 40px;
+      height: 1px;
+      background: #333;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .reel-canvas.playing .divider { display: none; }
+
+    .error-msg {
+      color: #ff4444;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-align: center;
+      display: none;
+      margin-bottom: 20px;
+    }
+
+    .error-msg.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <h1>AI Marketing Reels</h1>
+
+  <div class="controls">
+    <select class="count-select" id="countSelect">
+      <option value="3">3 REELS</option>
+      <option value="5" selected>5 REELS</option>
+      <option value="8">8 REELS</option>
+    </select>
+    <button class="generate-btn" id="generateBtn" onclick="generateReels()">
+      GENERATE
+    </button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+    <div class="loading-text">AI IS THINKING</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="reels-grid" id="reelsGrid"></div>
+
+  <script>
+    async function generateReels() {
+      const btn = document.getElementById('generateBtn');
+      const loading = document.getElementById('loading');
+      const grid = document.getElementById('reelsGrid');
+      const errorMsg = document.getElementById('errorMsg');
+      const count = document.getElementById('countSelect').value;
+
+      btn.disabled = true;
+      loading.classList.add('active');
+      errorMsg.classList.remove('active');
+      grid.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: parseInt(count) })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.error);
+
+        renderReels(data.scripts);
+
+      } catch (err) {
+        errorMsg.textContent = '
